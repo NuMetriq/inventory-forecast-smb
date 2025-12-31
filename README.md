@@ -112,6 +112,14 @@ This behavior aligns with operational intuition and provides owners with transpa
 
 ---
 
+## Executive Summary
+
+A 1-2 page, client-ready summary of the problem, methodology, results, and recommendations is available here:
+
+- [Executive Summary (PDF)](reports/executive_summary.pdf)
+
+---
+
 ## 5) Repo structure
 
 notebooks/   — EDA, data cleaning, forecasting experiments  
