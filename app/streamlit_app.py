@@ -201,6 +201,30 @@ with right:
         st.write(f"- Current inventory: **{float(current_inventory):.1f} units**")
         st.write(f"- Recommended order quantity: **{qty:.1f} units**")
 
+    # ----------------------------
+    # Download recommendation
+    # ----------------------------
+    recommendation_df = pd.DataFrame(
+        [{
+            "SKU": sku,
+            "Lead_Time_Weeks": lead_time,
+            "Service_Level": service_level,
+            "Current_Inventory_Units": int(current_inventory),
+            "Forecast_Uncertainty_Sigma": round(float(sigma), 2),
+            "Safety_Stock_Units": round(float(ss), 1),
+            "Reorder_Point_Units": round(float(rop), 1),
+            "Recommended_Order_Quantity_Units": round(float(qty), 1),
+            "Generated_At": pd.Timestamp.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        }]
+    )
+
+    st.download_button(
+        label="Download reorder recommendation (CSV)",
+        data=recommendation_df.to_csv(index=False),
+        file_name=f"reorder_recommendation_{sku}.csv",
+        mime="text/csv",
+    )
+
 st.markdown("---")
 st.caption(
     "This tool is designed for decision support. Outputs should be interpreted alongside real-world context and business judgment."
