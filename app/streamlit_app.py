@@ -10,7 +10,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-
+st.set_page_config(
+    page_title="Inventory Reorder Dashboard",
+    page_icon="📦",
+    layout="wide"
+)
 from src.inventory_logic import order_quantity, z_value
 
 
@@ -50,33 +54,68 @@ def load_weekly() -> pd.DataFrame:
 # ----------------------------
 # UI
 # ----------------------------
-st.set_page_config(page_title="SMB Inventory Forecast & Reorder", layout="wide")
-st.title("SMB Inventory Forecast & Reorder Decision System")
-st.caption("Forecast weekly demand with uncertainty and compute reorder recommendations (ROP + safety stock).")
+st.title("Inventory Reorder Decision Dashboard")
+
+st.markdown(
+    """
+    This dashboard provides **risk-aware reorder recommendations** based on historical demand,
+    supplier lead time, and desired service level.
+
+    It is designed to support **practical inventory decisions**, not precise point forecasts.
+    """
+)
 
 weekly = load_weekly()
 
 left, right = st.columns([1, 2])
 
 with left:
-    st.subheader("Inputs")
+    st.subheader("Scenario inputs")
 
     sku_list = weekly["StockCode"].drop_duplicates().tolist()
-    sku = st.selectbox("Select SKU", sku_list, index=0)
+    sku = st.selectbox(
+        "Select Product (SKU)",
+        sku_list,
+        index=0,
+        help="Recommendations are calculated per SKU using historical weekly demand."
+    )
 
-    lead_time = st.slider("Lead time (weeks)", min_value=2, max_value=8, value=4, step=1)
-    service_level = st.slider("Service level", min_value=0.80, max_value=0.99, value=0.95, step=0.01)
+    lead_time = st.slider(
+        "Supplier Lead Time (weeks)",
+        min_value=2,
+        max_value=8,
+        value=4,
+        step=1,
+        help="Time between placing an order and receiving inventory."
+    )
 
-    current_inventory = st.number_input("Current on-hand inventory (units)", min_value=0, value=50, step=1)
+    service_level = st.slider(
+        "Target Service Level",
+        min_value=0.80,
+        max_value=0.99,
+        value=0.95,
+        step=0.01,
+        help="Probability of avoiding a stockout during lead time."
+    )
+
+    current_inventory = st.number_input(
+        "Current On-Hand Inventory (units)",
+        min_value=0,
+        value=50,
+        step=1,
+        help="Enter your current physical count (or best estimate)."
+    )
 
     st.markdown("---")
-    st.write("**Notes**")
-    st.write("- Forecast method: seasonal-naive (52-week) with residual-based uncertainty.")
-    st.write("- Safety stock: z × σ × √(lead time)")
-    st.write("- Reorder point: expected lead-time demand + safety stock")
+    st.write("**How to read this dashboard**")
+    st.write("- The forecast is conservative for spiky SKUs; uncertainty drives safety stock.")
+    st.write("- Safety stock increases with higher service levels and longer lead times.")
+    st.write("- Reorder point = expected lead-time demand + safety stock.")
 
 with right:
     sku_df = weekly[weekly["StockCode"] == sku].sort_values("WeekStart")
+    weeks_of_history = sku_df["WeekStart"].nunique()
+    st.caption(f"Data coverage: {weeks_of_history} weeks of history for SKU {sku}.")
     y = sku_df["weekly_units"].to_numpy(dtype=float)
 
     # Forecast longer than slider range so we can sum lead-time demand
@@ -105,29 +144,64 @@ with right:
     last_date = sku_df["WeekStart"].iloc[-1]
     future_dates = pd.date_range(start=last_date + pd.Timedelta(weeks=1), periods=horizon, freq="W-MON")
 
-    # KPI cards
+    st.subheader("Reorder recommendation")
+
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Reorder point (units)", f"{rop:.1f}")
-    k2.metric("Safety stock (units)", f"{ss:.1f}")
-    k3.metric("Recommended order qty (units)", f"{qty:.1f}")
-    k4.metric("Forecast σ (units)", f"{sigma:.1f}")
+    k1.metric(
+        "Reorder Point (units)",
+        f"{rop:.0f}",
+        help="Inventory level at which a new order should be placed to reduce stockout risk during lead time."
+    )
+    k2.metric(
+        "Safety Stock (units)",
+        f"{ss:.0f}",
+        help="Buffer inventory held to protect against demand volatility and supplier delays."
+    )
+    k3.metric(
+        "Recommended Order Quantity (units)",
+        f"{qty:.0f}",
+        help="Suggested order size based on current inventory, forecast uncertainty, and lead time."
+    )
+    k4.metric(
+        "Demand Uncertainty σ (units)",
+        f"{sigma:.0f}",
+        help="Estimated typical forecast error scale. Higher σ implies more volatile demand."
+    )
 
     # Plot
     fig = plt.figure()
     plt.plot(sku_df["WeekStart"], sku_df["weekly_units"], label="History")
     plt.plot(future_dates, mu, label="Forecast")
-    plt.fill_between(future_dates, lower, upper, alpha=0.2, label=f"{int(service_level*100)}% interval")
-    plt.title(f"SKU {sku} — Weekly demand forecast")
+    plt.fill_between(future_dates, lower, upper, alpha=0.2, label=f"{service_level:.0%} interval")
+    plt.title(f"SKU {sku} — Historical weekly demand with forecast context")
     plt.xlabel("Week")
     plt.ylabel("Units")
     plt.legend()
     st.pyplot(fig, clear_figure=True)
+    st.caption(
+        "Forecasts are intentionally conservative for volatile SKUs. "
+        "Uncertainty is incorporated into reorder decisions rather than optimized away."
+    )
 
-    # Explain the calculation (owner-friendly)
     ltd = sum(forecast_mean_by_week[h] for h in range(1, lead_time + 1))
-    st.markdown("### How the recommendation is computed")
-    st.write(f"- Expected demand during lead time ({lead_time} weeks): **{ltd:.1f} units**")
-    st.write(f"- Safety stock at ~{int(service_level*100)}% service level: **{ss:.1f} units**")
-    st.write(f"- Reorder point (ROP): **{rop:.1f} units**")
-    st.write(f"- Current inventory: **{float(current_inventory):.1f} units**")
-    st.write(f"- **Recommended order quantity:** **{qty:.1f} units**")
+
+    st.markdown("### Interpretation")
+    st.write(
+        f"With a lead time of **{lead_time} weeks** and a target service level of **{service_level:.0%}**, "
+        f"place a new order when inventory falls to approximately **{rop:.0f} units**."
+    )
+    st.write(
+        "Increasing lead time or service level raises the reorder point and safety stock to reduce the risk of stockouts."
+    )
+
+    with st.expander("Show calculation details"):
+        st.write(f"- Expected demand during lead time: **{ltd:.1f} units**")
+        st.write(f"- Safety stock: **{ss:.1f} units**")
+        st.write(f"- Reorder point (ROP): **{rop:.1f} units**")
+        st.write(f"- Current inventory: **{float(current_inventory):.1f} units**")
+        st.write(f"- Recommended order quantity: **{qty:.1f} units**")
+
+st.markdown("---")
+st.caption(
+    "This tool is designed for decision support. Outputs should be interpreted alongside real-world context and business judgment."
+)
