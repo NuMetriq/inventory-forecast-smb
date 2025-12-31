@@ -69,6 +69,49 @@ A Streamlit dashboard that provides:
 
 ---
 
+## Results
+
+### Forecast accuracy (baseline comparison)
+
+Forecasts were evaluated using rolling backtests across a representative set of SKUs with sufficient sales history (≥20 weeks).
+
+Average error metrics across the evaluated SKUs:
+
+- Mean Absolute Error (MAE):
+  - Naive baseline: ~122 units per week
+  - 4-week moving average: ~102 units per week
+- Root Mean Squared Error (RMSE):
+  - Naive baseline: ~148 units per week
+  - 4-week moving average: ~127 units per week
+
+The modest improvement from simple smoothing reflects the highly variable and intermittent nature of demand in this dataset, where large, infrequent orders drive much of the error.
+
+---
+
+### Decision impact
+
+While point forecast accuracy is inherently limited for spiky SKUs, explicitly modeling uncertainty enables actionable inventory decisions:
+
+- Safety stock increases appropriately with demand volatility and lead time
+- Reorder points scale monotonically with lead time and service level
+- Order quantities respond smoothly to scenario changes via dashboard sliders
+
+Rather than optimizing for marginal gains in RMSE, the system prioritizes **risk-aware ordering** over false precision, which is more appropriate for small businesses with limited data and cash constraints.
+
+---
+
+### Example outcome (single SKU)
+
+For a representative SKU with spiky demand:
+
+- Lead time: 2 weeks → Reorder point ≈ 73 units  
+- Lead time: 4 weeks → Reorder point ≈ 117 units  
+- Lead time: 6 weeks → Reorder point ≈ 157 units  
+
+This behavior aligns with operational intuition and provides owners with transparent, adjustable reorder guidance.
+
+---
+
 ## 5) Repo structure
 
 notebooks/   — EDA, data cleaning, forecasting experiments  
