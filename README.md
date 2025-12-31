@@ -1,158 +1,119 @@
-# SMB Inventory Forecasting & Reorder Decision System
-(Online Retail II — real transaction data)
+# Applied Data Science Portfolio
+## Business-First Analytics for Small & Mid-Sized Organizations
 
-TL;DR:
-I built a decision system for a small retailer/manufacturer that forecasts weekly SKU demand, explicitly models uncertainty, and recommends reorder quantities based on lead time and desired service level.
+### Overview
 
----
+This portfolio showcases applied data science projects focused on **real business decisions**, not just model accuracy.
 
-## 1) Business problem
+My work emphasizes:
+- Interpretable, decision-oriented analytics
+- Real-world constraints (limited data, cash, operations)
+- Clear communication with non-technical stakeholders
+- End-to-end delivery: data → analysis → decision support → executive summary
 
-Small businesses often reorder inventory with limited cash, limited storage, and uncertain demand.
-Ordering too little causes stockouts and lost repeat customers; ordering too much ties up cash and creates holding or spoilage risk.
-
-Decision this system supports:
-For each SKU, how much to reorder (and when) given supplier lead time and a target service level.
-
-Success looks like:
-- Fewer stockouts on fast-moving products
-- Less cash trapped in slow movers
-- Clear, explainable reorder recommendations an owner can trust
+The projects below are designed to resemble **consulting or in-house analytics engagements**, using real data and producing client-ready artifacts.
 
 ---
 
-## 2) Data
+## Flagship Case Study: Inventory & Customer Analytics for an SMB
 
-Dataset:
-Online Retail II (real transaction-level e-commerce orders)
+This case study represents an end-to-end analytics engagement for a small retailer or light manufacturer, built using real transaction-level data.
 
-Grain:
-Invoice line items aggregated to weekly SKU demand
+The work is organized into two complementary decision modules that operate on the same underlying data source.
 
-Key fields used:
-- InvoiceDate
-- StockCode
-- Quantity
-- UnitPrice
-- Invoice (to detect cancellations/returns)
-- CustomerID
-
-Cleaning rules (documented and enforced):
-- Remove cancellations/returns (e.g., invoices starting with C, negative quantities)
-- Drop zero or negative prices
-- Aggregate demand to weekly units per SKU
-- Filter to SKUs with sufficient sales history for forecasting
+📁 Project folder:  
+`inventory-forecast-smb/`
 
 ---
 
-## 3) How it works (plain language)
+### Module 1: Inventory Forecasting & Reorder Decision System
 
-- Weekly demand is forecast per SKU using a simple, explainable seasonal-naive baseline
-- Forecast uncertainty is estimated from historical residuals
-- Safety stock is computed as:
-  z × σ × √(lead time)
-- Reorder point (ROP) is:
-  Expected lead-time demand + safety stock
-- Recommended order quantity is:
-  max(0, ROP − current inventory)
+**Business question:**  
+How should a small business reorder inventory under uncertain demand and limited cash?
 
-Lead time and service level are adjustable via dashboard sliders.
+**What I built:**
+- Cleaned and aggregated transaction-level data into weekly SKU demand
+- Evaluated baseline forecasting approaches using rolling backtests
+- Explicitly modeled demand uncertainty
+- Translated forecasts into safety stock, reorder points, and order quantities
+- Delivered an interactive dashboard with scenario sliders
+- Produced a client-ready executive summary (PDF)
 
----
+**Key decisions supported:**
+- How much inventory to reorder
+- How lead time and service level affect risk
+- Which SKUs require conservative buffers
 
-## 4) Deliverable
-
-A Streamlit dashboard that provides:
-- SKU demand history with 4-week forecasts and uncertainty bands
-- Recommended reorder point, safety stock, and order quantity
-- What-if sliders for lead time and service level
-
----
-
-## Results
-
-### Forecast accuracy (baseline comparison)
-
-Forecasts were evaluated using rolling backtests across a representative set of SKUs with sufficient sales history (≥20 weeks).
-
-Average error metrics across the evaluated SKUs:
-
-- Mean Absolute Error (MAE):
-  - Naive baseline: ~122 units per week
-  - 4-week moving average: ~102 units per week
-- Root Mean Squared Error (RMSE):
-  - Naive baseline: ~148 units per week
-  - 4-week moving average: ~127 units per week
-
-The modest improvement from simple smoothing reflects the highly variable and intermittent nature of demand in this dataset, where large, infrequent orders drive much of the error.
+**Artifacts:**
+- Interactive Streamlit dashboard
+- Inventory executive summary (PDF)
+- Reproducible notebooks and reusable logic
 
 ---
 
-### Decision impact
+### Module 2: Customer Segmentation & Growth Strategy
 
-While point forecast accuracy is inherently limited for spiky SKUs, explicitly modeling uncertainty enables actionable inventory decisions:
+**Business question:**  
+Which customers should the business prioritize to grow revenue efficiently?
 
-- Safety stock increases appropriately with demand volatility and lead time
-- Reorder points scale monotonically with lead time and service level
-- Order quantities respond smoothly to scenario changes via dashboard sliders
+**What I built:**
+- Engineered customer-level behavioral features (recency, frequency, value, basket size)
+- Segmented customers using interpretable clustering
+- Identified high-value, growth, wholesale, and at-risk customer groups
+- Translated segments into concrete marketing, pricing, and operational actions
+- Produced a client-ready executive summary (PDF)
 
-Rather than optimizing for marginal gains in RMSE, the system prioritizes **risk-aware ordering** over false precision, which is more appropriate for small businesses with limited data and cash constraints.
+**Key decisions supported:**
+- Where to focus retention efforts
+- Which customers warrant discounts or perks
+- How to avoid wasted marketing spend
 
----
-
-### Example outcome (single SKU)
-
-For a representative SKU with spiky demand:
-
-- Lead time: 2 weeks → Reorder point ≈ 73 units  
-- Lead time: 4 weeks → Reorder point ≈ 117 units  
-- Lead time: 6 weeks → Reorder point ≈ 157 units  
-
-This behavior aligns with operational intuition and provides owners with transparent, adjustable reorder guidance.
-
----
-
-## Executive Summary
-
-A 1-2 page, client-ready summary of the problem, methodology, results, and recommendations is available here:
-
-- [Executive Summary (PDF)](reports/executive_summary.pdf)
+**Artifacts:**
+- Segmentation analysis notebooks
+- Strategy-focused interpretation notebook
+- Customer segmentation executive summary (PDF)
 
 ---
 
-## 5) Repo structure
+## Methodological principles
 
-notebooks/   — EDA, data cleaning, forecasting experiments  
-src/         — reusable pipeline (data prep, forecasting, inventory logic)  
-app/         — Streamlit dashboard  
-reports/     — 1–2 page executive summary  
+Across projects, I prioritize:
 
----
+- **Decision impact over marginal accuracy gains**
+- **Uncertainty awareness**, especially with sparse or volatile data
+- **Explainability**, so outputs can be trusted and acted upon
+- **Business framing**, not model-centric storytelling
 
-## 6) Run the dashboard
-
-Install dependencies:
-    pip install -r requirements.txt
-
-Run the app:
-    python -m streamlit run app/streamlit_app.py
+I intentionally avoid unnecessary complexity when it does not materially improve decisions.
 
 ---
 
-## 7) Limitations & next steps
+## Tools & techniques
 
-Limitations:
-- Demand is intermittent and spiky; forecasts are intentionally conservative
-- Inventory on-hand is a manual input (would integrate with POS/ERP in production)
-- Holding and stockout costs are proxies
-
-Next steps:
-- ABC classification and cash-constrained ordering
-- Model monitoring and drift detection
-- Pilot deployment to measure stockout and overstock reduction
+- Python (pandas, numpy, scikit-learn)
+- Time-series forecasting (baseline + uncertainty)
+- Clustering and segmentation
+- Feature engineering
+- Streamlit dashboards
+- Git & reproducible project structure
+- Executive-level written communication
 
 ---
 
-## Status
+## About me
 
-Core system complete; polishing documentation and report.
+I am focused on applying data science to **real operational and strategic problems**, particularly in small and mid-sized organizations where data is imperfect and decisions carry immediate consequences.
+
+My goal is to build analytics that **inform action**, not just optimize metrics.
+
+---
+
+## Contact / next steps
+
+If you’re interested in:
+- applied analytics consulting
+- inventory or operations analytics
+- customer growth strategy
+- or portfolio collaboration
+
+Feel free to reach out via GitHub.
