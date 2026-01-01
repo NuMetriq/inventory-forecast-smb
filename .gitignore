@@ -14,3 +14,9 @@ __pycache__/
 
 # notebooks
 .ipynb_checkpoints/
+
+# --- Allow processed artifacts needed for dashboard ---
+!data/
+!data/processed/
+!data/processed/customer_segments.csv
+!data/processed/sku_segment_mix.csv
