@@ -50,6 +50,38 @@ def load_weekly() -> pd.DataFrame:
     df["StockCode"] = df["StockCode"].astype(str)
     return df.sort_values(["StockCode", "WeekStart"])
 
+@st.cache_data
+def load_sku_segment_mix() -> pd.DataFrame:
+    path = project_root / "data" / "processed" / "sku_segment_mix.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df["StockCode"] = df["StockCode"].astype(str)
+    return df
+
+def recommended_service_level_from_mix(mix_df: pd.DataFrame) -> float:
+    """
+    Heuristic: choose service level based on how much revenue comes from high-value segments.
+    Returns a value in [0.80, 0.99].
+    """
+    if mix_df is None or mix_df.empty:
+        return 0.95
+
+    weights = {
+        "High-Value Loyal": 0.99,
+        "Growing Repeat": 0.97,
+        "Bulk / Wholesale": 0.96,
+        "At-Risk / Churned": 0.93,
+        "Low-Value / One-Time": 0.92,
+    }
+
+    s = 0.0
+    for _, r in mix_df.iterrows():
+        seg = r.get("segment_name")
+        share = float(r.get("revenue_share", 0.0))
+        s += share * weights.get(seg, 0.95)
+
+    return float(np.clip(s, 0.80, 0.99))
 
 # ----------------------------
 # UI
@@ -66,6 +98,7 @@ st.markdown(
 )
 
 weekly = load_weekly()
+sku_seg = load_sku_segment_mix()
 
 left, right = st.columns([1, 2])
 
@@ -98,6 +131,12 @@ with left:
         help="Probability of avoiding a stockout during lead time."
     )
 
+    use_recommended_sl = st.checkbox(
+        "Use recommended service level (based on customer segments)",
+        value=False,
+        help="If enabled, the dashboard suggests a service level based on which customer segments purchase this SKU."
+    )
+
     current_inventory = st.number_input(
         "Current On-Hand Inventory (units)",
         min_value=0,
@@ -117,6 +156,38 @@ with right:
     weeks_of_history = sku_df["WeekStart"].nunique()
     st.caption(f"Data coverage: {weeks_of_history} weeks of history for SKU {sku}.")
     y = sku_df["weekly_units"].to_numpy(dtype=float)
+    
+    st.subheader("Who buys this SKU? (Customer segment mix)")
+
+    if sku_seg.empty:
+        st.info("Customer segmentation data not found. Generate data/processed/sku_segment_mix.csv to enable this section.")
+        mix = pd.DataFrame()
+    else:
+        mix = sku_seg[sku_seg["StockCode"] == sku].sort_values("revenue_share", ascending=False)
+
+        if mix.empty:
+            st.info("No segment mix available for this SKU.")
+        else:
+            show_cols = ["segment_name", "revenue_share", "unit_share", "customers", "orders"]
+            mix_view = (
+                mix[show_cols]
+                .assign(
+                    revenue_share=lambda d: (d["revenue_share"] * 100).round(1),
+                    unit_share=lambda d: (d["unit_share"] * 100).round(1),
+                )
+                .rename(columns={
+                    "segment_name": "Segment",
+                    "revenue_share": "Revenue Share (%)",
+                    "unit_share": "Unit Share (%)",
+                    "customers": "Customers",
+                    "orders": "Orders",
+                })
+            )
+            st.dataframe(mix_view, use_container_width=True)
+
+    if "use_recommended_sl" in locals() and use_recommended_sl and mix is not None and not mix.empty:
+        service_level = recommended_service_level_from_mix(mix)
+        st.caption(f"Suggested service level for this SKU (based on segment mix): {service_level:.0%}")
 
     # Forecast longer than slider range so we can sum lead-time demand
     horizon = 8
