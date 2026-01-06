@@ -21,6 +21,8 @@ from src.inventory_logic import order_quantity, z_value
 # ----------------------------
 # Forecast helpers (SMB-friendly)
 # ----------------------------
+
+
 def seasonal_naive_forecast(y: np.ndarray, horizon: int = 8, season_len: int = 52) -> np.ndarray:
     if len(y) >= season_len:
         base = y[-season_len]
@@ -83,9 +85,30 @@ def recommended_service_level_from_mix(mix_df: pd.DataFrame) -> float:
 
     return float(np.clip(s, 0.80, 0.99))
 
+def segment_mix_summary_sentence(mix_df: pd.DataFrame, top_n: int = 2) -> str:
+    """
+    Generate a short narrative sentence summarizing who buys the SKU.
+    """
+    if mix_df is None or mix_df.empty:
+        return "Customer segment mix is not available for this SKU."
+
+    top = (
+        mix_df.sort_values("revenue_share", ascending=False)
+              .head(top_n)
+              .assign(pct=lambda d: (d["revenue_share"] * 100).round(0).astype(int))
+    )
+
+    parts = [f"{r.segment_name} ({r.pct}%)" for r in top.itertuples()]
+    joined = " and ".join(parts)
+
+    return f"This SKU is primarily purchased by {joined} customers."
+
+
 # ----------------------------
 # UI
 # ----------------------------
+
+
 st.title("Inventory Reorder Decision Dashboard")
 
 st.markdown(
@@ -184,6 +207,9 @@ with right:
                 })
             )
             st.dataframe(mix_view, use_container_width=True)
+            st.markdown(
+                f"**Insight:** {segment_mix_summary_sentence(mix)}"
+            )
 
     if "use_recommended_sl" in locals() and use_recommended_sl and mix is not None and not mix.empty:
         service_level = recommended_service_level_from_mix(mix)
@@ -272,9 +298,12 @@ with right:
         st.write(f"- Current inventory: **{float(current_inventory):.1f} units**")
         st.write(f"- Recommended order quantity: **{qty:.1f} units**")
 
+
     # ----------------------------
     # Download recommendation
     # ----------------------------
+
+
     recommendation_df = pd.DataFrame(
         [{
             "SKU": sku,

@@ -61,6 +61,7 @@ Which customers should the business prioritize to grow revenue efficiently?
 - Segmented customers using interpretable clustering
 - Identified high-value, growth, wholesale, and at-risk customer groups
 - Translated segments into concrete marketing, pricing, and operational actions
+- Integrated customer segmentation to adapt service levels and inventory buffers based on customer value
 - Produced a client-ready executive summary (PDF)
 
 **Key decisions supported:**
