@@ -61,6 +61,15 @@ def load_sku_segment_mix() -> pd.DataFrame:
     df["StockCode"] = df["StockCode"].astype(str)
     return df
 
+@st.cache_data
+def load_pricing_flags() -> pd.DataFrame:
+    path = project_root / "data" / "processed" / "sku_pricing_flags.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df["StockCode"] = df["StockCode"].astype(str)
+    return df
+
 def recommended_service_level_from_mix(mix_df: pd.DataFrame) -> float:
     """
     Heuristic: choose service level based on how much revenue comes from high-value segments.
@@ -122,6 +131,7 @@ st.markdown(
 
 weekly = load_weekly()
 sku_seg = load_sku_segment_mix()
+pricing_flags = load_pricing_flags()
 
 left, right = st.columns([1, 2])
 
@@ -178,6 +188,7 @@ with right:
     sku_df = weekly[weekly["StockCode"] == sku].sort_values("WeekStart")
     weeks_of_history = sku_df["WeekStart"].nunique()
     st.caption(f"Data coverage: {weeks_of_history} weeks of history for SKU {sku}.")
+
     y = sku_df["weekly_units"].to_numpy(dtype=float)
     
     st.subheader("Who buys this SKU? (Customer segment mix)")
@@ -214,6 +225,60 @@ with right:
     if "use_recommended_sl" in locals() and use_recommended_sl and mix is not None and not mix.empty:
         service_level = recommended_service_level_from_mix(mix)
         st.caption(f"Suggested service level for this SKU (based on segment mix): {service_level:.0%}")
+
+
+    st.subheader("SKU Decision Summary")
+    
+    # Price responsiveness from precomputed flags
+    is_price_elastic = False
+    pricing_evidence = None
+
+    if not pricing_flags.empty:
+        row = pricing_flags.loc[pricing_flags["StockCode"] == sku]
+        if not row.empty:
+            klass = str(row.iloc[0]["price_elasticity_class"])
+            is_price_elastic = (klass.lower() == "high")
+            pricing_evidence = row.iloc[0].get("evidence", None)
+
+    if pricing_evidence:
+        st.caption(f"Pricing evidence: {pricing_evidence}")
+
+    # Customer importance flag
+    vip_share = 0.0
+    growth_share = 0.0
+
+    if mix is not None and not mix.empty:
+        vip_share = mix.loc[mix["segment_name"].isin(["High-Value Loyal"]), "revenue_share"].sum()
+        growth_share = mix.loc[mix["segment_name"].isin(["Growing Repeat"]), "revenue_share"].sum()
+
+    # High only if VIPs dominate revenue, not just repeats
+    is_customer_critical = vip_share >= 0.40
+
+    # Inventory priority (3-tier)
+    if is_customer_critical and is_price_elastic:
+        inventory_priority = "High"
+    elif is_customer_critical or is_price_elastic:
+        inventory_priority = "Medium"
+    else:
+        inventory_priority = "Standard"
+
+    st.write(
+        f"""
+        **Customer Criticality:** {'High' if is_customer_critical else 'Moderate'}  
+        **Price Responsiveness:** {'High' if is_price_elastic else 'Low / Unknown'}  
+        **Inventory Priority:** {inventory_priority}
+        """
+    )
+
+    if mix is not None and not mix.empty:
+        st.caption(
+            f"Segment mix (revenue share): VIP={vip_share:.0%} | Growth={growth_share:.0%}"
+        )
+
+    promotion_active = is_price_elastic and use_recommended_sl
+    if promotion_active:
+        service_level = min(service_level + 0.02, 0.99)
+        st.caption("Service level increased due to active promotion on a price-elastic SKU.")
 
     # Forecast longer than slider range so we can sum lead-time demand
     horizon = 8

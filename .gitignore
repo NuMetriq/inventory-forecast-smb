@@ -20,3 +20,8 @@ __pycache__/
 !data/processed/
 !data/processed/customer_segments.csv
 !data/processed/sku_segment_mix.csv
+
+# --- Allow pricing artifacts needed for dashboard ---
+!data/
+!data/processed/
+!data/processed/sku_pricing_flags.csv
