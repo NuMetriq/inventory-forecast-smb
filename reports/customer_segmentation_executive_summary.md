@@ -1,137 +1,80 @@
-# Executive Summary
-## Customer Segmentation & Growth Strategy
+# Customer Segmentation Executive Summary
+## Identifying and Prioritizing Revenue-Driving Customers
 
-### Client context
-This analysis is framed around a small retailer or light manufacturer with a large and diverse customer base, limited marketing resources, and the need to grow revenue without increasing operational complexity or unnecessary discounting.
-
-The business serves thousands of customers, but customer value is unevenly distributed, making it difficult to prioritize retention, marketing, and pricing decisions.
+### Decision Context
+This analysis is framed around a small retailer or light manufacturer with a diverse customer base and limited marketing, pricing, and operational capacity.
+The business cannot treat all customers equally. Decisions around retention, service levels, promotions, and inventory support must be prioritized toward customers who drive the most 
+revenue and long-term value.
+The goal of this project is to support **clear, defensible customer prioritization decisions** based on observed purchasing behavior.
 
 ---
 
 ### Business problem
-Most small businesses treat all customers similarly, despite significant differences in purchasing behavior and lifetime value. This leads to:
-- Over-investment in low-value customers
-- Under-protection of high-value customers
-- Inefficient discounting and marketing spend
+Small businesses often face the following challenges when managing customers:
+- A small subset of customers drive a disproportionate share of revenue
+- Marketing and operational resources are limited
+- Discounts and perks are often applied broadly without clear return
+- At-risk customers are identified too late, after revenue has already declined
 
-The core questions are:
-**Which customers matter most, and how should the business treat them differently to drive sustainable growth?**
-
----
-
-### Data
-- Source: Online Retail II (real e-commerce transaction data)
-- Transactions analyzed: ~408,000
-- Customers analyzed: 4,300+
-- Time span: ~1 year of sales history
-
-Transaction data was cleaned to remove cancellations, returns, and invalid prices, then aggregated to customer-level behavioral features.
+The core question is:
+**Which customers should the business prioritize, and how should that prioritization influence operational and pricing decisions?**
 
 ---
 
-### Methodology (plain language)
-Each customer was summarized using behavioral features including:
-- Recency (time since last purchase)
-- Frequency (number of orders)
-- Monetary value (total revenue)
-- Average order value
-- Product variety and purchasing span
+### Analytical Approach
+The analysis focuses on **observable customer behavior**, not demographics or assumptions:
+- **Purchase recency**
+- **Purchase frequency**
+- **Total monetary value**
+- **Average order size**
 
-Highly skewed features were log-transformed, standardized, and clustered using k-means to identify groups of customers with similar purchasing behavior.
-
-Five segments were selected to balance interpretability with actionability, ensuring the results could be used by a small business without dedicated CRM or analytics teams.
+Customers are grouped into interpretable segments using these behavioral signals. The emphasis is on **clarity and actionability**, not fine-grained personalization.
+Customer segments are then linked back to products (SKUs) to understand **Which items matter most to high-value customers**.
 
 ---
 
-### Customer segments & strategic implications
+### Key Findings
+*The analysis highlights several decision-relevant patterns*:
+- Customer value is highly unever, with a small group accounting for a large share of revenue
+- High-value customers exhibit more consistent purchasing behavior and larger baskets
+- Growth-oriented repeat customers represent meaningful upside if retained and supported
+- Many customers contribute marginal revenue and should not drive operational complexity
 
-#### 1. High-Value Loyal Customers
-- Very recent purchasers
-- High purchase frequency
-- Highest lifetime value
-
-**Implication:**  
-These customers form the core revenue base. Losing even a small fraction would materially impact the business.
-
-**Recommended actions:**
-- Avoid heavy discounting to protect margins
-- Offer early access or exclusive bundles
-- Prioritize inventory availability and fulfillment
+These patterns indicate that **customer strategy should focus on protecting and growing a limited set of high-impact relationships**.
 
 ---
 
-#### 2. Growing Repeat Customers
-- Recent purchasers
-- Moderate frequency and spend
-- Large segment by count
+### Decision Guidance
+Based on the segmentation results, customer-related decisions should follow these principles:
+- Prioritize **high-value loya customers** for retention, service quality, and stock availability
+- Target **growth customers** with selective incentives rather than broad discounts
+- Avoid expending operational or marketing effort on persistently low-value customers
+- Use customer segment mix at the SKU level to inform inventory and pricing decisions
 
-**Implication:**  
-This is the primary growth opportunity. Small improvements in retention or basket size can significantly increase revenue.
-
-**Recommended actions:**
-- Bundled products and reorder reminders
-- Loyalty incentives and free-shipping thresholds
-- Gentle, targeted promotions
+Segmentation is treated as a **decision lens**, not a marketing exercise.
 
 ---
 
-#### 3. Bulk / Wholesale Buyers
-- Infrequent purchases
-- Very high average order value
-- Revenue driven by large, episodic orders
+### Limitations and Guardrails
+- Segments are based on historical behavior and may shift over time
+- New customers may be misclassified until sufficient history is available
+- Segmentation should guide prioritization, not dictate individual customer treatment
 
-**Implication:**  
-These customers drive lumpy revenue and can introduce operational risk if not anticipated.
-
-**Recommended actions:**
-- Volume-based pricing tiers
-- Clear lead-time communication
-- Dedicated inventory and capacity planning
+Results should be revisited periodically as customer behavior evolves.
 
 ---
 
-#### 4. At-Risk / Churned Customers
-- Long time since last purchase
-- Low engagement and declining value
-
-**Implication:**  
-Most customers in this segment are unlikely to return without incentives.
-
-**Recommended actions:**
-- One-time, low-cost reactivation campaign
-- If unresponsive, discontinue active marketing
+### How to Use This
+1. Review customer segment definitions and their behavioral characteristics
+2. Identify which segments drive the majority of revenue
+3. Examine SKU-level customer mix to understand product importance
+4. Use segments to inform inventory buffers, pricing decisions, and promotions
+5. Re-evaluate segmentation as new transaction data becomes available
 
 ---
 
-#### 5. Low-Value / One-Time Customers
-- Very low frequency and lifetime value
-- Large in number but low revenue contribution
-
-**Implication:**  
-Aggressive marketing or discounting toward this group yields poor ROI.
-
-**Recommended actions:**
-- Minimal, automated communication
-- Avoid discounts that erode margins
-- Allow natural self-selection into higher-value segments
-
 ---
 
-### Key insights
-- Customer value is highly concentrated: a small subset of customers drives the majority of revenue
-- Growth is best achieved by protecting loyal customers and converting repeat buyers
-- Treating all customers equally leads to wasted marketing spend and unnecessary margin loss
-
----
-
-### Recommended next steps
-If this were a paid engagement, recommended next steps would include:
-- Integrating customer segments into marketing and pricing workflows
-- Tracking segment movement over time
-- Combining segmentation with inventory planning to align service levels with customer value
-- Running targeted pilots to measure retention and revenue lift
-
----
-
-### Conclusion
-This segmentation provides a practical framework for prioritizing customers, allocating marketing resources efficiently, and supporting sustainable revenue growth. The focus is on actionable insights rather than purely statistical groupings.
+## Bottom Line
+Not all customers are equally valuable, and treating them as such leads to wasted effort and missed opportunities.
+This framework provides a practical way to **focus attention, inventory, and pricing decisions on the customers that matter most**, while maintaining discipline around limited business resources.
