@@ -181,10 +181,41 @@ def main() -> None:
     output_dir = PROJECT_ROOT / "data" / "processed" / "v2"
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    product_descriptions = cleaned[[
+        "StockCode",
+        "Description",
+        "InvoiceDate",
+    ]].copy()
+
+    product_descriptions["Description"] = (
+        product_descriptions["Description"]
+        .astype("string")
+        .str.strip()
+        .str.replace(r"\s+", " ", regex=True)
+    )
+
+    valid_description = (
+        product_descriptions["Description"].notna()
+        & product_descriptions["Description"].ne("")
+    )
+
+    product_descriptions = (
+        product_descriptions.loc[valid_description]
+        .rename(columns={
+            "StockCode": "stock_code",
+            "Description": "description",
+            "InvoiceDate": "observed_at",
+        })
+        .drop_duplicates()
+        .sort_values(["stock_code", "observed_at", "description"])
+        .reset_index(drop=True)
+    )
+
     outputs = {
         "weekly_sales_panel.csv": panel,
         "week_calendar.csv": calendar,
         "cleaning_audit.csv": audit,
+        "product_descriptions.csv": product_descriptions,
     }
 
     for filename, table in outputs.items():

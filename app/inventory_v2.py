@@ -21,7 +21,9 @@ PANEL_PATH = (
     / "weekly_sales_panel.csv"
 )
 
-AS_OF = pd.Timestamp("2011-10-10")
+DESCRIPTIONS_PATH = PANEL_PATH.parent / "product_descriptions.csv"
+
+DEFAULT_FORECAST_DATE = pd.Timestamp("2011-10-10")
 HORIZON_WEEKS = 4
 
 
@@ -39,6 +41,29 @@ def load_panel():
         dtype={"stock_code": "string"},
         parse_dates=["week_start"],
     )
+
+
+@st.cache_data
+def load_product_names(as_of):
+    descriptions = pd.read_csv(
+        DESCRIPTIONS_PATH,
+        dtype={
+            "stock_code": "string",
+            "description": "string",
+        },
+        parse_dates=["observed_at"],
+    )
+
+    known = descriptions.loc[
+        descriptions["observed_at"].lt(as_of)
+    ].dropna(subset=["stock_code", "description"])
+
+    latest = (
+        known.sort_values(["stock_code", "observed_at", "description"])
+        .drop_duplicates("stock_code", keep="last")
+    )
+
+    return latest.set_index("stock_code")["description"].to_dict()
 
 
 @st.cache_data
@@ -67,9 +92,33 @@ if not PANEL_PATH.is_file():
     st.stop()
 
 panel = load_panel()
+
+forecast_dates = pd.date_range(
+    start=DEFAULT_FORECAST_DATE,
+    end=panel["week_start"].max(),
+    freq="W-MON",
+).tolist()
+
+AS_OF = st.sidebar.selectbox(
+    "Historical forecast date",
+    options=forecast_dates,
+    index=0,
+    format_func=lambda date: date.strftime("%b %d, %Y"),
+    help=(
+        "Reconstructs a planning scenario using only sales "
+        "and completed forecast errors available before this date."
+    ),
+)
+
 history, buffers = prepare_history(panel, AS_OF)
 
 products = sorted(history["stock_code"].unique())
+
+if not DESCRIPTIONS_PATH.is_file():
+    st.error("Product descriptions are missing. Run scripts/check_cleaning.py.")
+    st.stop()
+
+product_names = load_product_names(AS_OF)
 
 with st.sidebar:
     st.header("Planning scenario")
@@ -77,9 +126,12 @@ with st.sidebar:
     default_index = products.index("85123A") if "85123A" in products else 0
 
     stock_code = st.selectbox(
-        "Product code",
+        "Product",
         options=products,
         index=default_index,
+        format_func=lambda code: (
+            f"{code} — {product_names.get(code, 'Description unavailable')}"
+        ),
     )
 
     st.write(f"**Forecast date:** {AS_OF.date()}")
@@ -102,7 +154,8 @@ recent_sales = (
     .reindex(recent_weeks)
 )
 
-st.subheader(f"Product {stock_code}")
+st.subheader(product_names.get(stock_code, "Description unavailable"))
+st.caption(f"Product code: {stock_code}")
 
 product_buffer = buffers.loc[buffers["stock_code"].eq(stock_code)]
 
@@ -148,6 +201,34 @@ else:
         "overlapping four-week error windows, using their 90th percentile. "
         "This does not guarantee 90% coverage. "
         "The stock target is rounded up to the next whole unit."
+    )
+
+    scenario_export = pd.DataFrame([{
+        "stock_code": stock_code,
+        "description": product_names.get(
+            stock_code, "Description unavailable"
+        ),
+        "forecast_date": AS_OF.date().isoformat(),
+        "horizon_weeks": HORIZON_WEEKS,
+        "forecast_method": "Four-week moving average",
+        "forecast_units": target["forecast_units"],
+        "buffer_quantile": 0.90,
+        "completed_error_windows": int(buffer_row["error_windows"]),
+        "buffer_units": target["buffer_units"],
+        "stock_target_units": target["target_units"],
+        "interpretation": (
+            "Historical demonstration; coverage target, not order quantity. "
+            "Buffer uses overlapping historical errors. "
+            "The quantile does not guarantee a service level."
+        ),
+    }])
+
+    st.download_button(
+        label="Download planning scenario (CSV)",
+        data=scenario_export.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"inventory_scenario_{stock_code}_{AS_OF:%Y%m%d}.csv",
+        mime="text/csv",
+        on_click="ignore",
     )
 
 st.subheader("Recent recorded sales")
