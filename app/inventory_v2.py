@@ -99,6 +99,8 @@ forecast_dates = pd.date_range(
     freq="W-MON",
 ).tolist()
 
+st.sidebar.header("Planning scenario")
+
 AS_OF = st.sidebar.selectbox(
     "Historical forecast date",
     options=forecast_dates,
@@ -121,8 +123,6 @@ if not DESCRIPTIONS_PATH.is_file():
 product_names = load_product_names(AS_OF)
 
 with st.sidebar:
-    st.header("Planning scenario")
-
     default_index = products.index("85123A") if "85123A" in products else 0
 
     stock_code = st.selectbox(
