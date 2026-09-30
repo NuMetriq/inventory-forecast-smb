@@ -10,6 +10,7 @@ data/processed/
 __pycache__/
 *.pyc
 .venv/
+.venv-v2/
 .env
 
 # notebooks
